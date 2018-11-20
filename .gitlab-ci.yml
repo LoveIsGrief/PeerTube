@@ -1,0 +1,121 @@
+image: chocobozzz/peertube-ci:8
+
+services:
+  - postgres:9.6
+  - redis:latest
+
+stages:
+  - dependencies
+  - build-and-lint
+  - test
+
+cache:
+  paths:
+    - .yarn
+
+before_script:
+  - export PGHOST="postgres"
+  - export PGUSER="postgres"
+  - export REDIS_HOST="redis"
+  - psql -c "create user peertube with password 'peertube';"
+  - yarn config set cache-folder .yarn
+  - yarn install --pure-lockfile --production
+
+build-server:
+  stage: build-and-lint
+  artifacts:
+    expire_in: 1h
+    paths:
+      - dist/
+  script:
+    - yarn install --pure-lockfile
+    - npm run build:server
+
+lint:
+  stage: build-and-lint
+  script:
+    - yarn install --pure-lockfile
+    - npm run tslint -- --project ./tsconfig.json -c ./tslint.json server.ts "server/**/*.ts" "shared/**/*.ts"
+    - cd client && npm run lint
+
+jest:
+  stage: build-and-lint
+  script:
+    - cd client && yarn install --pure-lockfile && npm run test
+
+test-misc:
+  stage: test
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - test1/
+      - test2/
+      - test3/
+    when: always
+  script:
+    - yarn install --pure-lockfile
+    - npm run build -- --light-fr
+    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/client.ts \
+        server/tests/feeds/index.ts \
+        server/tests/misc-endpoints.ts \
+        server/tests/helpers/index.ts
+
+test-cli:
+  stage: test
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - test1/
+      - test2/
+      - test3/
+    when: always
+  script:
+    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/cli/index.ts
+
+api-1:
+  stage: test
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - test1/
+      - test2/
+      - test3/
+    when: always
+  script:
+    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-1.ts
+
+api-2:
+  stage: test
+  artifacts:
+    expire_in: 1 day
+    paths:
+    - test1/
+    - test2/
+    - test3/
+    when: always
+  script:
+    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-2.ts
+
+api-3:
+  stage: test
+  artifacts:
+    expire_in: 1 day
+    paths:
+    - test1/
+    - test2/
+    - test3/
+    when: always
+  script:
+    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-3.ts
+
+api-4:
+  stage: test
+  artifacts:
+    expire_in: 1 day
+    paths:
+    - test1/
+    - test2/
+    - test3/
+    when: always
+  script:
+    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-4.ts

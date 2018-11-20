@@ -1,4 +1,4 @@
-import { ChildProcess, exec, fork } from 'child_process'
+import { ChildProcess, exec, spawn } from 'child_process'
 import { join } from 'path'
 import { root, wait } from '../miscs/miscs'
 import { readFile } from 'fs-extra'
@@ -69,7 +69,7 @@ function flushTests () {
   })
 }
 
-function runServer (serverNumber: number, configOverride?: Object, args = []) {
+function runServer (serverNumber: number, configOverride: object = {}, args = []) {
   const server: ServerInfo = {
     app: null,
     serverNumber: serverNumber,
@@ -104,7 +104,18 @@ function runServer (serverNumber: number, configOverride?: Object, args = []) {
   env['NODE_ENV'] = 'test'
   env['NODE_APP_INSTANCE'] = serverNumber.toString()
 
-  if (configOverride !== undefined) {
+  if (process.env['GITLAB_CI']) {
+    configOverride = {
+      database: {
+        hostname: 'postgres'
+      },
+      redis: {
+        hostname: 'redis'
+      }
+    }
+  }
+
+  if (Object.keys(configOverride).length !== 0) {
     env['NODE_CONFIG'] = JSON.stringify(configOverride)
   }
 
@@ -114,8 +125,17 @@ function runServer (serverNumber: number, configOverride?: Object, args = []) {
     detached: true
   }
 
+  args.unshift(join(__dirname, '..', '..', '..', '..', 'dist', 'server'))
+
+  let command = 'node'
+  if (process.env['NODE_PROF']) {
+    // args.unshift('--prof')
+    command = '0x'
+    args.unshift('--collect-only', '--output-dir', 'profiling')
+  }
+
   return new Promise<ServerInfo>(res => {
-    server.app = fork(join(__dirname, '..', '..', '..', '..', 'dist', 'server.js'), args, options)
+    server.app = spawn(command, args, options)
     server.app.stdout.on('data', function onStdout (data) {
       let dontContinue = false
 
@@ -142,6 +162,10 @@ function runServer (serverNumber: number, configOverride?: Object, args = []) {
 
       server.app.stdout.removeListener('data', onStdout)
       res(server)
+    })
+
+    server.app.stderr.on('data', function onStderr (data) {
+      console.error(data.toString())
     })
   })
 }

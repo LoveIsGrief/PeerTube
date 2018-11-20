@@ -13,7 +13,7 @@ describe('Test users API validators', function () {
   // ---------------------------------------------------------------
 
   before(async function () {
-    this.timeout(30000)
+    this.timeout(230000)
 
     await flushTests()
 
