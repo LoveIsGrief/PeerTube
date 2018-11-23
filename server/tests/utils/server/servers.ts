@@ -137,6 +137,7 @@ function runServer (serverNumber: number, configOverride: object = {}, args = []
   return new Promise<ServerInfo>(res => {
     server.app = spawn(command, args, options)
     server.app.stdout.on('data', function onStdout (data) {
+      console.log(data.toString())
       let dontContinue = false
 
       // Capture things if we want to

@@ -8,7 +8,6 @@ stages:
 before_script:
   - if [[ $CI_JOB_STAGE == "test" ]]; then psql -c "create user peertube with password 'peertube';"; fi
   - if [[ -e node_modules.tar ]]; then tar xf node_modules.tar; fi
-  - if [[ -e .yarn-cache.tar ]]; then tar xf .yarn-cache.tar; fi
   - if [[ -e dist.tar ]]; then tar xf dist.tar; fi
 
 ###
@@ -47,16 +46,19 @@ before_script:
 install-deps:
   stage: dependencies
   dependencies: []
+  cache:
+    key: yarn
+    paths:
+      - .yarn-cache
   artifacts:
     paths:
       - node_modules.tar
-      - .yarn-cache.tar
     expire_in: 1h
   script:
     - yarn install --pure-lockfile --cache-folder .yarn-cache
     - tar cf node_modules.tar node_modules/ client/node_modules/
     - tar cf .yarn-cache.tar .yarn-cache/
-    - rm -rf .yarn-cache/ client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+    - rm -rf client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
 
 ###
 ## Build and lint
@@ -68,24 +70,23 @@ build-server:
     paths:
       - dist.tar
       - node_modules.tar
-      - .yarn-cache.tar
   script:
     - npm run build:server
     - tar cf dist.tar dist/
-    - rm -rf .yarn-cache/ client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+    - rm -rf client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
 
 lint:
   <<: *build-and-lint
   script:
     - npm run tslint -- --project ./tsconfig.json -c ./tslint.json server.ts "server/**/*.ts" "shared/**/*.ts"
     - cd client && npm run lint
-    - rm -rf .yarn-cache/ client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+    - rm -rf client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
 
 jest:
   <<: *build-and-lint
   script:
     - cd client && npm run test
-    - rm -rf .yarn-cache/ client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+    - rm -rf client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
 
 ###
 ## Tests

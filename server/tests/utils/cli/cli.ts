@@ -6,7 +6,8 @@ function getEnvCli (server?: ServerInfo) {
   let envCLI = `NODE_ENV=test NODE_APP_INSTANCE=${server.serverNumber}`
 
   if (process.env['GITLAB_CI']) {
-    envCLI += ' NODE_CONFIG="{ \"database\": { \"hostname\": \"postgres\" }, \"redis\": { \"hostname\": \"redis\" } }"'
+    // tslint:disable
+    envCLI += ' NODE_CONFIG="{ \\\"database\\\": { \\\"hostname\\\": \\\"postgres\\\" }, \\\"redis\\\": { \\\"hostname\\\": \\\"redis\\\" } }"'
   }
 
   return envCLI
