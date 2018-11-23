@@ -1,50 +1,37 @@
 image: chocobozzz/peertube-ci:8
 
-services:
-  - postgres:9.6
-  - redis:latest
-
 stages:
   - dependencies
   - build-and-lint
   - test
 
-cache:
-  paths:
-    - .yarn
-
 before_script:
-  - export PGHOST="postgres"
-  - export PGUSER="postgres"
-  - export REDIS_HOST="redis"
-  - psql -c "create user peertube with password 'peertube';"
-  - yarn config set cache-folder .yarn
-  - yarn install --pure-lockfile --production
+  - if [[ $CI_JOB_STAGE == "test" ]]; then psql -c "create user peertube with password 'peertube';"; fi
+  - if [[ -e node_modules.tar ]]; then tar xf node_modules.tar; fi
+  - if [[ -e .yarn-cache.tar ]]; then tar xf .yarn-cache.tar; fi
+  - if [[ -e dist.tar ]]; then tar xf dist.tar; fi
 
-build-server:
+###
+## Jobs templates
+#
+.build-and-lint: &build-and-lint
   stage: build-and-lint
-  artifacts:
-    expire_in: 1h
-    paths:
-      - dist/
-  script:
-    - yarn install --pure-lockfile
-    - npm run build:server
+  dependencies:
+    - install-deps
 
-lint:
-  stage: build-and-lint
-  script:
-    - yarn install --pure-lockfile
-    - npm run tslint -- --project ./tsconfig.json -c ./tslint.json server.ts "server/**/*.ts" "shared/**/*.ts"
-    - cd client && npm run lint
-
-jest:
-  stage: build-and-lint
-  script:
-    - cd client && yarn install --pure-lockfile && npm run test
-
-test-misc:
+.tests: &tests
   stage: test
+  dependencies:
+    - build-server
+  services:
+    - name: postgres:9.6
+      alias: postgres
+    - name: redis:latest
+      alias: redis
+  variables:
+    PGHOST: postgres
+    PGUSER: postgres
+    REDIS_HOST: redis
   artifacts:
     expire_in: 1 day
     paths:
@@ -52,8 +39,60 @@ test-misc:
       - test2/
       - test3/
     when: always
+
+
+###
+## Dependencies
+#
+install-deps:
+  stage: dependencies
+  dependencies: []
+  artifacts:
+    paths:
+      - node_modules.tar
+      - .yarn-cache.tar
+    expire_in: 1h
   script:
-    - yarn install --pure-lockfile
+    - yarn install --pure-lockfile --cache-folder .yarn-cache
+    - tar cf node_modules.tar node_modules/ client/node_modules/
+    - tar cf .yarn-cache.tar .yarn-cache/
+    - rm -rf .yarn-cache/ client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+
+###
+## Build and lint
+#
+build-server:
+  <<: *build-and-lint
+  artifacts:
+    expire_in: 1h
+    paths:
+      - dist.tar
+      - node_modules.tar
+      - .yarn-cache.tar
+  script:
+    - npm run build:server
+    - tar cf dist.tar dist/
+    - rm -rf .yarn-cache/ client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+
+lint:
+  <<: *build-and-lint
+  script:
+    - npm run tslint -- --project ./tsconfig.json -c ./tslint.json server.ts "server/**/*.ts" "shared/**/*.ts"
+    - cd client && npm run lint
+    - rm -rf .yarn-cache/ client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+
+jest:
+  <<: *build-and-lint
+  script:
+    - cd client && npm run test
+    - rm -rf .yarn-cache/ client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+
+###
+## Tests
+#
+test-misc:
+  <<: *tests
+  script:
     - npm run build -- --light-fr
     - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/client.ts \
         server/tests/feeds/index.ts \
@@ -61,61 +100,12 @@ test-misc:
         server/tests/helpers/index.ts
 
 test-cli:
-  stage: test
-  artifacts:
-    expire_in: 1 day
-    paths:
-      - test1/
-      - test2/
-      - test3/
-    when: always
+  <<: *tests
   script:
     - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/cli/index.ts
 
-api-1:
-  stage: test
-  artifacts:
-    expire_in: 1 day
-    paths:
-      - test1/
-      - test2/
-      - test3/
-    when: always
+api:
+  <<: *tests
+  parallel: 4
   script:
-    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-1.ts
-
-api-2:
-  stage: test
-  artifacts:
-    expire_in: 1 day
-    paths:
-    - test1/
-    - test2/
-    - test3/
-    when: always
-  script:
-    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-2.ts
-
-api-3:
-  stage: test
-  artifacts:
-    expire_in: 1 day
-    paths:
-    - test1/
-    - test2/
-    - test3/
-    when: always
-  script:
-    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-3.ts
-
-api-4:
-  stage: test
-  artifacts:
-    expire_in: 1 day
-    paths:
-    - test1/
-    - test2/
-    - test3/
-    when: always
-  script:
-    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-4.ts
+    - npm run mocha -- --timeout 5000 --exit --require ts-node/register --bail server/tests/api/index-$CI_NODE_INDEX.ts
