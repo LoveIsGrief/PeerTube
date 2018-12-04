@@ -1,6 +1,8 @@
-#!/bin/sh
+#!/bin/bash
 
 set -eu
+
+redisHost=${REDIS_HOST:-127.0.0.1}
 
 recreateDB () {
   dbname="peertube_test$1"
@@ -17,7 +19,7 @@ removeFiles () {
 }
 
 dropRedis () {
-  redis-cli KEYS "bull-localhost:900$1*" | grep -v empty | xargs --no-run-if-empty redis-cli DEL
+  redis-cli -h "$redisHost" KEYS "bull-localhost:900$1*" | grep -v empty | xargs --no-run-if-empty redis-cli DEL
 }
 
 for i in $(seq 1 6); do

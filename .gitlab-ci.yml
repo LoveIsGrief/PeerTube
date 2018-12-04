@@ -1,0 +1,116 @@
+image: chocobozzz/peertube-ci:8
+
+stages:
+  - dependencies
+  - build-and-lint
+  - test
+
+before_script:
+  - if [[ $CI_JOB_STAGE == "test" ]]; then psql -c "create user peertube with password 'peertube';"; fi
+  - if [[ -e node_modules.tar ]]; then tar xf node_modules.tar; fi
+  - if [[ -e dist.tar ]]; then tar xf dist.tar; fi
+
+###
+## Jobs templates
+#
+.build-and-lint: &build-and-lint
+  stage: build-and-lint
+  dependencies:
+    - install-deps
+
+.tests: &tests
+  stage: test
+  dependencies:
+    - build-server
+  services:
+    - name: postgres:9.6
+      alias: postgres
+    - name: redis:latest
+      alias: redis
+  variables:
+    PGHOST: postgres
+    PGUSER: postgres
+    REDIS_HOST: redis
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - test1/
+      - test2/
+      - test3/
+    when: always
+
+
+###
+## Dependencies
+#
+install-deps:
+  stage: dependencies
+  dependencies: []
+  cache:
+    key: yarn
+    paths:
+      - .yarn-cache
+  artifacts:
+    paths:
+      - node_modules.tar
+    expire_in: 1h
+  script:
+    - yarn install --pure-lockfile --cache-folder .yarn-cache
+    - tar cf node_modules.tar node_modules/ client/node_modules/
+    - rm -rf client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+
+###
+## Build and lint
+#
+build-server:
+  <<: *build-and-lint
+  artifacts:
+    expire_in: 1h
+    paths:
+      - dist.tar
+      - node_modules.tar
+  script:
+    - npm run build:server
+    - tar cf dist.tar dist/
+    - rm -rf client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+
+lint:
+  <<: *build-and-lint
+  script:
+    - npm run tslint -- --project ./tsconfig.json -c ./tslint.json server.ts "server/**/*.ts" "shared/**/*.ts"
+    - cd client && npm run lint
+    - rm -rf client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+
+jest:
+  <<: *build-and-lint
+  script:
+    - cd client && npm run test
+    - rm -rf client/node_modules/ dist/ node_modules/ test1/ test2/ test3/
+
+###
+## Tests
+#
+test-misc:
+  <<: *tests
+  script:
+    - npm run build:client -- --light-fr
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/client.ts
+
+test-cli:
+  <<: *tests
+  retry:
+    max: 2
+  script:
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/cli/peertube.ts
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/cli/reset-password.ts
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/cli/update-host.ts
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/cli/create-import-video-file-job.ts
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/cli/create-transcoding-job.ts
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/cli/optimize-old-videos.ts
+
+api:
+  <<: *tests
+  parallel: 4
+  script:
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/api/index-1.ts
+    - npm run mocha -- --timeout 30000 --exit --require ts-node/register --bail server/tests/api/index-$CI_NODE_INDEX.ts
