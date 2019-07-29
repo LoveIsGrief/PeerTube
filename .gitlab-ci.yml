@@ -86,10 +86,11 @@ cache:
 
 build-nightly:
   stage: nightly
+#  only:
+#    - schedules
   script:
-#    - yarn install --pure-lockfile --cache-folder .yarn-cache
-#    - npm run nightly
-    - touch peertube-nightly-2019-07-29.tar.xz
+    - yarn install --pure-lockfile --cache-folder .yarn-cache
+    - npm run nightly
     - mkdir "${HOME}/.ssh"
     - chmod 700 "${HOME}/.ssh"
     - if [ ! -z ${DEPLOYEMENT_KNOWN_HOSTS+x} ]; then echo -e "${DEPLOYEMENT_KNOWN_HOSTS}" > ${HOME}/.ssh/known_hosts; fi
