@@ -13,11 +13,14 @@ export interface ServerStats {
   totalInstanceFollowers: number
   totalInstanceFollowing: number
 
-  videosRedundancy: {
-    strategy: VideoRedundancyStrategy
-    totalSize: number
-    totalUsed: number
-    totalVideoFiles: number
-    totalVideos: number
-  }[]
+  videosRedundancy: VideosRedundancyStats[]
 }
+
+export interface VideosRedundancyStats {
+  strategy: VideoRedundancyStrategy
+  totalSize: number
+  totalUsed: number
+  totalVideoFiles: number
+  totalVideos: number
+}
+

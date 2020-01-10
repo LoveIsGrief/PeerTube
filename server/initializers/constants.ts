@@ -73,7 +73,9 @@ const SORTABLE_COLUMNS = {
 
   PLUGINS: [ 'name', 'createdAt', 'updatedAt' ],
 
-  AVAILABLE_PLUGINS: [ 'npmName', 'popularity' ]
+  AVAILABLE_PLUGINS: [ 'npmName', 'popularity' ],
+
+  VIDEO_REDUNDANCIES: [ 'name' ]
 }
 
 const OAUTH_LIFETIME = {

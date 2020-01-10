@@ -19,4 +19,4 @@ export type RecentlyAddedStrategy = {
   minLifetime: number
 }
 
-export type VideosRedundancy = MostViewsRedundancyStrategy | TrendingRedundancyStrategy | RecentlyAddedStrategy
+export type VideosRedundancyStrategy = MostViewsRedundancyStrategy | TrendingRedundancyStrategy | RecentlyAddedStrategy

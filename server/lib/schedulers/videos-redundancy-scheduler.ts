@@ -1,7 +1,7 @@
 import { AbstractScheduler } from './abstract-scheduler'
 import { HLS_REDUNDANCY_DIRECTORY, REDUNDANCY, VIDEO_IMPORT_TIMEOUT, WEBSERVER } from '../../initializers/constants'
 import { logger } from '../../helpers/logger'
-import { VideosRedundancy } from '../../../shared/models/redundancy'
+import { VideosRedundancyStrategy } from '../../../shared/models/redundancy'
 import { VideoRedundancyModel } from '../../models/redundancy/video-redundancy'
 import { downloadWebTorrentVideo, generateMagnetUri } from '../../helpers/webtorrent'
 import { join } from 'path'
@@ -27,7 +27,7 @@ import {
 import { getVideoFilename } from '../video-paths'
 
 type CandidateToDuplicate = {
-  redundancy: VideosRedundancy,
+  redundancy: VideosRedundancyStrategy,
   video: MVideoWithAllFiles,
   files: MVideoFile[],
   streamingPlaylists: MStreamingPlaylistFiles[]
@@ -140,7 +140,7 @@ export class VideosRedundancyScheduler extends AbstractScheduler {
     }
   }
 
-  private findVideoToDuplicate (cache: VideosRedundancy) {
+  private findVideoToDuplicate (cache: VideosRedundancyStrategy) {
     if (cache.strategy === 'most-views') {
       return VideoRedundancyModel.findMostViewToDuplicate(REDUNDANCY.VIDEOS.RANDOMIZED_FACTOR)
     }
@@ -187,7 +187,7 @@ export class VideosRedundancyScheduler extends AbstractScheduler {
     }
   }
 
-  private async createVideoFileRedundancy (redundancy: VideosRedundancy, video: MVideoAccountLight, fileArg: MVideoFile) {
+  private async createVideoFileRedundancy (redundancy: VideosRedundancyStrategy, video: MVideoAccountLight, fileArg: MVideoFile) {
     const file = fileArg as MVideoFileVideo
     file.Video = video
 
@@ -220,7 +220,7 @@ export class VideosRedundancyScheduler extends AbstractScheduler {
   }
 
   private async createStreamingPlaylistRedundancy (
-    redundancy: VideosRedundancy,
+    redundancy: VideosRedundancyStrategy,
     video: MVideoAccountLight,
     playlistArg: MStreamingPlaylist
   ) {

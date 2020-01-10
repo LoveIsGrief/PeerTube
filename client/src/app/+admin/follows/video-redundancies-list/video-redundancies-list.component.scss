@@ -1,0 +1,28 @@
+@import '_variables';
+@import '_mixins';
+
+.expansion-block {
+  margin-bottom: 20px;
+}
+
+.admin-sub-header {
+  align-items: flex-end;
+
+  .select-filter-block {
+    &:not(:last-child) {
+      margin-right: 10px;
+    }
+
+    label {
+      margin-bottom: 2px;
+    }
+
+    .peertube-select-container {
+      @include peertube-select-container(auto);
+    }
+  }
+}
+
+.chart-blocks {
+  display: flex;
+}

@@ -5,7 +5,7 @@ import { TableModule } from 'primeng/table'
 import { SharedModule } from '../shared'
 import { AdminRoutingModule } from './admin-routing.module'
 import { AdminComponent } from './admin.component'
-import { FollowersListComponent, FollowingAddComponent, FollowsComponent } from './follows'
+import { FollowersListComponent, FollowingAddComponent, FollowsComponent, VideoRedundanciesListComponent } from './follows'
 import { FollowingListComponent } from './follows/following-list/following-list.component'
 import { UserCreateComponent, UserListComponent, UserPasswordComponent, UsersComponent, UserUpdateComponent } from './users'
 import {
@@ -27,13 +27,18 @@ import { PluginSearchComponent } from '@app/+admin/plugins/plugin-search/plugin-
 import { PluginShowInstalledComponent } from '@app/+admin/plugins/plugin-show-installed/plugin-show-installed.component'
 import { SelectButtonModule } from 'primeng/selectbutton'
 import { PluginApiService } from '@app/+admin/plugins/shared/plugin-api.service'
+import { VideoRedundancyInformation } from '@app/+admin/follows/video-redundancies-list/video-redundancy-information.component'
+import { ChartModule } from 'primeng/chart'
 
 @NgModule({
   imports: [
     AdminRoutingModule,
+
+    SharedModule,
+
     TableModule,
     SelectButtonModule,
-    SharedModule
+    ChartModule
   ],
 
   declarations: [
@@ -44,6 +49,8 @@ import { PluginApiService } from '@app/+admin/plugins/shared/plugin-api.service'
     FollowersListComponent,
     FollowingListComponent,
     RedundancyCheckboxComponent,
+    VideoRedundanciesListComponent,
+    VideoRedundancyInformation,
 
     UsersComponent,
     UserCreateComponent,

@@ -1,5 +1,5 @@
 import * as express from 'express'
-import { body, param } from 'express-validator'
+import { body, param, query } from 'express-validator'
 import { exists, isBooleanValid, isIdOrUUIDValid, toBooleanOrNull, toIntOrNull } from '../../helpers/custom-validators/misc'
 import { logger } from '../../helpers/logger'
 import { areValidationErrors } from './utils'
@@ -7,6 +7,7 @@ import { VideoRedundancyModel } from '../../models/redundancy/video-redundancy'
 import { isHostValid } from '../../helpers/custom-validators/servers'
 import { ServerModel } from '../../models/server/server'
 import { doesVideoExist } from '../../helpers/middlewares'
+import { isVideoRedundancyTarget } from '@server/helpers/custom-validators/video-redundancies'
 
 const videoFileRedundancyGetValidator = [
   param('videoId').custom(isIdOrUUIDValid).not().isEmpty().withMessage('Should have a valid video id'),
@@ -101,10 +102,25 @@ const updateServerRedundancyValidator = [
   }
 ]
 
+const listVideoRedundanciesValidator = [
+  query('target')
+    .optional()
+    .custom(isVideoRedundancyTarget).withMessage('Should have a valid video redundancies target'),
+
+  async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    logger.debug('Checking listVideoRedundanciesValidator parameters', { parameters: req.query })
+
+    if (areValidationErrors(req, res)) return
+
+    return next()
+  }
+]
+
 // ---------------------------------------------------------------------------
 
 export {
   videoFileRedundancyGetValidator,
   videoPlaylistRedundancyGetValidator,
-  updateServerRedundancyValidator
+  updateServerRedundancyValidator,
+  listVideoRedundanciesValidator
 }
