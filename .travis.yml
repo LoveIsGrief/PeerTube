@@ -19,16 +19,11 @@ cache:
     - $HOME/.cache/yarn
     - $HOME/fixtures
 
-stages:
-  - name: test
-    if: env(NO_TESTING) IS false
-  - name: openapi
-    if: (tag IS present) OR (env(FORCE_OPENAPI) IS true)
+sudo: false
 
 services:
   - postgresql
   - redis-server
-  - docker
 
 install:
   - CC=gcc-4.9 CXX=g++-4.9 yarn install
@@ -41,25 +36,15 @@ before_script:
   - export PATH=$HOME/bin:$PATH
   - psql -c "create user peertube with password 'peertube';" -U postgres
 
-jobs:
+matrix:
   include:
-    - stage: test
-      env: TEST_SUITE=misc
-    - stage: test
-      env: TEST_SUITE=api-1
-    - stage: test
-      env: TEST_SUITE=api-2
-    - stage: test
-      env: TEST_SUITE=api-3
-    - stage: test
-      env: TEST_SUITE=api-4
-    - stage: test
-      env: TEST_SUITE=cli
-    - stage: test
-      env: TEST_SUITE=lint
-    - stage: openapi
-      script:
-        - scripts/openapi-clients.sh
+  - env: TEST_SUITE=misc
+  - env: TEST_SUITE=api-1
+  - env: TEST_SUITE=api-2
+  - env: TEST_SUITE=api-3
+  - env: TEST_SUITE=api-4
+  - env: TEST_SUITE=cli
+  - env: TEST_SUITE=lint
 
 script:
   - NODE_PENDING_JOB_WAIT=2000 travis_retry npm run ci -- "$TEST_SUITE"
