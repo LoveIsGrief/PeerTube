@@ -39,6 +39,7 @@ yarn-error.log
 
 # Other
 /dump.rdb
+/dist/
 /.theia/
 /profiling/
 /*.zip
